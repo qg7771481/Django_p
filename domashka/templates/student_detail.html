@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Профіль студента: {{ student.first_name }} {{ student.last_name }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f4f7f6;
+            --white: #ffffff;
+            --text-muted: #7f8c8d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-bottom: 25px;
+        }
+
+        .header {
+            border-bottom: 2px solid var(--bg-color);
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1, h2 { margin: 0; color: var(--primary-color); }
+        h2 { font-size: 1.5rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item { margin-bottom: 10px; }
+        .label { font-weight: bold; color: var(--text-muted); display: block; font-size: 0.9rem; }
+        .value { font-size: 1.1rem; }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .status-active { background: #e8f5e9; color: #2e7d32; }
+        .status-inactive { background: #ffebee; color: #c62828; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table th {
+            text-align: left;
+            background: #f8f9fa;
+            padding: 12px;
+            color: var(--text-muted);
+            border-bottom: 2px solid var(--bg-color);
+        }
+
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--bg-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <h1>{{ student.first_name }} {{ student.last_name }}</h1>
+            <span class="value" style="color: var(--accent-color)">ID: {{ student.student_ticket_number }}</span>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="label">Електронна пошта</span>
+                <span class="value">{{ student.email }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Телефон</span>
+                <span class="value">{{ student.phone|default:"Не вказано" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="label">Група</span>
+                <span class="value">
+                    {% if student.group %}
+                        №{{ student.group.number }} (Кабінет: {{ student.group.meeting_room }})
+                        <br><small><i>"{{ student.group.slogan }}"</i></small>
+                    {% else %}
+                        Не закріплено
+                    {% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-id-card"></i> Читацький квиток</h2>
+        {% if student.library_card %}
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Номер картки</span>
+                    <span class="value">{{ student.library_card.card_number }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Статус</span>
+                    {% if student.library_card.is_active %}
+                        <span class="status-badge status-active">Активна</span>
+                    {% else %}
+                        <span class="status-badge status-inactive">Заблокована</span>
+                    {% endif %}
+                </div>
+                <div class="info-item">
+                    <span class="label">Термін дії</span>
+                    <span class="value">{{ student.library_card.issue_date }} — {{ student.library_card.expiration_date }}</span>
+                </div>
+            </div>
+        {% else %}
+            <p class="empty-state">Читацький квиток відсутній.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2><i class="fas fa-book"></i> Історія запозичень</h2>
+        {% if student.library_card and student.library_card.borrowed_books.all %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Назва книги</th>
+                        <th>Дата взяття</th>
+                        <th>Дата повернення</th>
+                        <th>Бібліотекар</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in student.library_card.borrowed_books.all %}
+                        <tr>
+                            <td>
+                                <strong>{{ entry.book.title }}</strong><br>
+                                <small>{{ entry.book.genre }}, {{ entry.book.year }} р.</small>
+                            </td>
+                            <td>{{ entry.borrow_date|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if entry.return_date %}
+                                    {{ entry.return_date|date:"d.m.Y H:i" }}
+                                {% else %}
+                                    <span style="color: #d35400;">На руках</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ entry.librarian_name }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-state">Книги ще не видавалися.</p>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>
